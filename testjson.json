@@ -1,0 +1,136 @@
+[
+    {
+      "Plan": {
+        "Node Type": "Hash Join",
+        "Parallel Aware": false,
+        "Join Type": "Inner",
+        "Startup Cost": 111720.1,
+        "Total Cost": 117320.95,
+        "Plan Rows": 29156,
+        "Plan Width": 19,
+        "Inner Unique": true,
+        "Hash Cond": "(customer.c_custkey = \"ANY_subquery\".o_custkey)",
+        "Plans": [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Relation Name": "customer",
+            "Alias": "customer",
+            "Startup Cost": 0,
+            "Total Cost": 5206.24,
+            "Plan Rows": 150324,
+            "Plan Width": 23
+          },
+          {
+            "Node Type": "Hash",
+            "Parent Relationship": "Inner",
+            "Parallel Aware": false,
+            "Startup Cost": 111355.65,
+            "Total Cost": 111355.65,
+            "Plan Rows": 29156,
+            "Plan Width": 8,
+            "Plans": [
+              {
+                "Node Type": "Subquery Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Alias": "ANY_subquery",
+                "Startup Cost": 110991.2,
+                "Total Cost": 111355.65,
+                "Plan Rows": 29156,
+                "Plan Width": 8,
+                "Plans": [
+                  {
+                    "Node Type": "Sort",
+                    "Parent Relationship": "Subquery",
+                    "Parallel Aware": false,
+                    "Startup Cost": 110991.2,
+                    "Total Cost": 111064.09,
+                    "Plan Rows": 29156,
+                    "Plan Width": 16,
+                    "Sort Key": [
+                      "(count(orders.o_orderkey)) DESC"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "Aggregate",
+                        "Strategy": "Sorted",
+                        "Partial Mode": "Finalize",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Startup Cost": 82242.41,
+                        "Total Cost": 108829.06,
+                        "Plan Rows": 29156,
+                        "Plan Width": 16,
+                        "Group Key": [
+                          "orders.o_custkey"
+                        ],
+                        "Filter": "(count(orders.o_orderkey) >= 20)",
+                        "Plans": [
+                          {
+                            "Node Type": "Gather Merge",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Startup Cost": 82242.41,
+                            "Total Cost": 106423.66,
+                            "Plan Rows": 174938,
+                            "Plan Width": 16,
+                            "Workers Planned": 2,
+                            "Plans": [
+                              {
+                                "Node Type": "Aggregate",
+                                "Strategy": "Sorted",
+                                "Partial Mode": "Partial",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Startup Cost": 81242.39,
+                                "Total Cost": 85231.45,
+                                "Plan Rows": 87469,
+                                "Plan Width": 16,
+                                "Group Key": [
+                                  "orders.o_custkey"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Sort",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Startup Cost": 81242.39,
+                                    "Total Cost": 82280.51,
+                                    "Plan Rows": 415250,
+                                    "Plan Width": 12,
+                                    "Sort Key": [
+                                      "orders.o_custkey"
+                                    ],
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": true,
+                                        "Relation Name": "orders",
+                                        "Alias": "orders",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 35394.05,
+                                        "Plan Rows": 415250,
+                                        "Plan Width": 12,
+                                        "Filter": "(o_totalprice >= '100000'::numeric)"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
