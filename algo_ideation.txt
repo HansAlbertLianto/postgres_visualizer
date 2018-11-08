@@ -1,0 +1,8 @@
+- search for each node
+    - corresponding parse SQL
+    - if already visited, don't visit again in SQL
+
+fields:
+- Group Key
+- Filter
+- Hash Cond
