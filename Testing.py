@@ -16,6 +16,13 @@ def traverseJSON(qepJSON, query):
         "Merge Join": sql_finder.process_merge_join,
         "Aggregate": sql_finder.process_aggregate,
         "Hash Join": sql_finder.process_hash_join,
+        "Sort": sql_finder.process_sort,
+        "Index Only Scan": sql_finder.process_index_only_scan,
+        "Hash": sql_finder.process_hash,
+        "Gather": sql_finder.process_gather,
+        "Unique": sql_finder.process_unique,
+        "Limit": sql_finder.process_limit,
+        "Subquery Scan": sql_finder.process_subquery_scan,
     }
 
     # Terminal node
