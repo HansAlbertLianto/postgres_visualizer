@@ -1,130 +1,130 @@
 [
     {
       "Plan": {
-        "Node Type": "Hash Join",
+        "Node Type": "Nested Loop",
         "Parallel Aware": false,
-        "Join Type": "Inner",
-        "Startup Cost": 111720.1,
-        "Total Cost": 117320.95,
-        "Plan Rows": 29156,
-        "Plan Width": 19,
-        "Inner Unique": true,
-        "Hash Cond": "(customer.c_custkey = \"ANY_subquery\".o_custkey)",
+        "Join Type": "Semi",
+        "Startup Cost": 2913.33,
+        "Total Cost": 147781.36,
+        "Plan Rows": 1,
+        "Plan Width": 253,
+        "Inner Unique": false,
+        "Join Filter": "(publication.pub_id = authored.pub_id)",
         "Plans": [
           {
             "Node Type": "Seq Scan",
-            "Parent Relationship": "Outer",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "InitPlan 1 (returns $0)",
             "Parallel Aware": false,
-            "Relation Name": "customer",
-            "Alias": "customer",
+            "Relation Name": "proceedings",
+            "Alias": "proceedings",
             "Startup Cost": 0,
-            "Total Cost": 5206.24,
-            "Plan Rows": 150324,
-            "Plan Width": 23
+            "Total Cost": 1899.22,
+            "Plan Rows": 1,
+            "Plan Width": 16,
+            "Filter": "(((title)::text = '19th Americas Conference on Information Systems AMCIS 2013 Chicago Illinois USA August 15-17 2013'::text) AND (publication_year = 2013))"
           },
           {
-            "Node Type": "Hash",
+            "Node Type": "Index Scan",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "InitPlan 2 (returns $1)",
+            "Parallel Aware": false,
+            "Scan Direction": "Forward",
+            "Index Name": "idx_16401_name",
+            "Relation Name": "author",
+            "Alias": "author",
+            "Startup Cost": 0.43,
+            "Total Cost": 8.45,
+            "Plan Rows": 1,
+            "Plan Width": 8,
+            "Index Cond": "((name)::text = 'Markus Bick'::text)"
+          },
+          {
+            "Node Type": "Nested Loop",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Join Type": "Inner",
+            "Startup Cost": 5.65,
+            "Total Cost": 1255.46,
+            "Plan Rows": 102,
+            "Plan Width": 261,
+            "Inner Unique": true,
+            "Plans": [
+              {
+                "Node Type": "Bitmap Heap Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Relation Name": "inproceedings",
+                "Alias": "inproceedings",
+                "Startup Cost": 5.22,
+                "Total Cost": 393.56,
+                "Plan Rows": 102,
+                "Plan Width": 8,
+                "Recheck Cond": "((cross_ref)::text = ($0)::text)",
+                "Plans": [
+                  {
+                    "Node Type": "Bitmap Index Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Index Name": "idx_16430_fk_inproceeding_to_proceeeding_idx",
+                    "Startup Cost": 0,
+                    "Total Cost": 5.19,
+                    "Plan Rows": 102,
+                    "Plan Width": 0,
+                    "Index Cond": "((cross_ref)::text = ($0)::text)"
+                  }
+                ]
+              },
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Scan Direction": "Forward",
+                "Index Name": "idx_16448_primary",
+                "Relation Name": "publication",
+                "Alias": "publication",
+                "Startup Cost": 0.43,
+                "Total Cost": 8.45,
+                "Plan Rows": 1,
+                "Plan Width": 253,
+                "Index Cond": "(pub_id = inproceedings.id)"
+              }
+            ]
+          },
+          {
+            "Node Type": "Materialize",
             "Parent Relationship": "Inner",
             "Parallel Aware": false,
-            "Startup Cost": 111355.65,
-            "Total Cost": 111355.65,
-            "Plan Rows": 29156,
+            "Startup Cost": 1000,
+            "Total Cost": 144537.27,
+            "Plan Rows": 53,
             "Plan Width": 8,
             "Plans": [
               {
-                "Node Type": "Subquery Scan",
+                "Node Type": "Gather",
                 "Parent Relationship": "Outer",
                 "Parallel Aware": false,
-                "Alias": "ANY_subquery",
-                "Startup Cost": 110991.2,
-                "Total Cost": 111355.65,
-                "Plan Rows": 29156,
+                "Startup Cost": 1000,
+                "Total Cost": 144537,
+                "Plan Rows": 53,
                 "Plan Width": 8,
+                "Workers Planned": 2,
+                "Params Evaluated": [
+                  "$1"
+                ],
+                "Single Copy": false,
                 "Plans": [
                   {
-                    "Node Type": "Sort",
-                    "Parent Relationship": "Subquery",
-                    "Parallel Aware": false,
-                    "Startup Cost": 110991.2,
-                    "Total Cost": 111064.09,
-                    "Plan Rows": 29156,
-                    "Plan Width": 16,
-                    "Sort Key": [
-                      "(count(orders.o_orderkey)) DESC"
-                    ],
-                    "Plans": [
-                      {
-                        "Node Type": "Aggregate",
-                        "Strategy": "Sorted",
-                        "Partial Mode": "Finalize",
-                        "Parent Relationship": "Outer",
-                        "Parallel Aware": false,
-                        "Startup Cost": 82242.41,
-                        "Total Cost": 108829.06,
-                        "Plan Rows": 29156,
-                        "Plan Width": 16,
-                        "Group Key": [
-                          "orders.o_custkey"
-                        ],
-                        "Filter": "(count(orders.o_orderkey) >= 20)",
-                        "Plans": [
-                          {
-                            "Node Type": "Gather Merge",
-                            "Parent Relationship": "Outer",
-                            "Parallel Aware": false,
-                            "Startup Cost": 82242.41,
-                            "Total Cost": 106423.66,
-                            "Plan Rows": 174938,
-                            "Plan Width": 16,
-                            "Workers Planned": 2,
-                            "Plans": [
-                              {
-                                "Node Type": "Aggregate",
-                                "Strategy": "Sorted",
-                                "Partial Mode": "Partial",
-                                "Parent Relationship": "Outer",
-                                "Parallel Aware": false,
-                                "Startup Cost": 81242.39,
-                                "Total Cost": 85231.45,
-                                "Plan Rows": 87469,
-                                "Plan Width": 16,
-                                "Group Key": [
-                                  "orders.o_custkey"
-                                ],
-                                "Plans": [
-                                  {
-                                    "Node Type": "Sort",
-                                    "Parent Relationship": "Outer",
-                                    "Parallel Aware": false,
-                                    "Startup Cost": 81242.39,
-                                    "Total Cost": 82280.51,
-                                    "Plan Rows": 415250,
-                                    "Plan Width": 12,
-                                    "Sort Key": [
-                                      "orders.o_custkey"
-                                    ],
-                                    "Plans": [
-                                      {
-                                        "Node Type": "Seq Scan",
-                                        "Parent Relationship": "Outer",
-                                        "Parallel Aware": true,
-                                        "Relation Name": "orders",
-                                        "Alias": "orders",
-                                        "Startup Cost": 0,
-                                        "Total Cost": 35394.05,
-                                        "Plan Rows": 415250,
-                                        "Plan Width": 12,
-                                        "Filter": "(o_totalprice >= '100000'::numeric)"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": true,
+                    "Relation Name": "authored",
+                    "Alias": "authored",
+                    "Startup Cost": 0,
+                    "Total Cost": 143531.7,
+                    "Plan Rows": 22,
+                    "Plan Width": 8,
+                    "Filter": "(author_id = $1)"
                   }
                 ]
               }
