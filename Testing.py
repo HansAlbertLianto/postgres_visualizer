@@ -13,6 +13,9 @@ def traverseJSON(qepJSON, query):
         "Nested Loop": sql_finder.process_nested_loop,
         "Bitmap Index Scan": sql_finder.process_ind_scan,
         "Bitmap Heap Scan": sql_finder.process_bitmap_heap_scan,
+        "Merge Join": sql_finder.process_merge_join,
+        "Aggregate": sql_finder.process_aggregate,
+        "Hash Join": sql_finder.process_hash_join,
     }
 
     # Terminal node

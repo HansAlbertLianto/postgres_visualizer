@@ -27,6 +27,11 @@ def cleanup_cond(filter):
     filtered_result = filter.replace("::text", "")
     while ('(' in filtered_result) or (')' in filtered_result):
         filtered_result = re.sub(r'\((.*?)\)', r'\1', filtered_result)
+
+    for aggr in ['avg', 'count', 'min', 'max', 'sum']:
+        if aggr in filtered_result:
+            filtered_result = filtered_result.replace(aggr, '')
+
     return filtered_result
 
 def process_seq_scan(qepJSON, query):
@@ -81,6 +86,17 @@ def process_ind_scan(qepJSON, query):
 
         sqlfragments.append(filter_cond)
 
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' in filter_word:
+                if filter_words.index('=') > 0:
+                    filter_words[filter_words.index('=') - 1], filter_words[filter_words.index('=') + 1] = filter_words[filter_words.index('=') + 1], filter_words[filter_words.index('=') - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.insert(0, new_filter_cond)
+
         sqlfragments = subquery_block_add(sqlfragments, filter_cond)
 
         # Account for all subqueries
@@ -93,8 +109,37 @@ def process_ind_scan(qepJSON, query):
                         sqlfragments.append("WHERE " + filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
                         sqlfragments.append(filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
     
+    if "Filter" in qepJSON.keys():
+        filter_cond = qepJSON["Filter"]
+        filter_cond = cleanup_cond(filter_cond)
+
+        sqlfragments.append(filter_cond)
+
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
+        sqlfragments = subquery_block_add(sqlfragments, filter_cond)
+
+        # Account for all subqueries
+        for subquery_result in re.findall("\$\d+", filter_cond):
+            filter_words = filter_cond.split()
+            
+            for filter_word in filter_words:
+                if filter_word == subquery_result:
+                    if filter_words.index(filter_word) > 1:
+                        sqlfragments.append("WHERE " + filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
+                        sqlfragments.append(filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
+
     if "Relation Name" in qepJSON.keys():
-        if "Index Cond" in qepJSON.keys():
+        if "Index Cond" in qepJSON.keys() or "Filter" in qepJSON.keys():
             sqlfragments = resolve_relation(sqlfragments, qepJSON)
         relation_name = qepJSON["Relation Name"]
         sqlfragments.append("FROM " + relation_name)
@@ -117,6 +162,17 @@ def process_bitmap_heap_scan(qepJSON, query):
 
         sqlfragments.append(filter_cond)
 
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
         sqlfragments = subquery_block_add(sqlfragments, filter_cond)
 
         # Account for all subqueries
@@ -129,6 +185,37 @@ def process_bitmap_heap_scan(qepJSON, query):
                         sqlfragments.append("WHERE " + filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
                         sqlfragments.append(filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
     
+    if "Filter" in qepJSON.keys():
+        filter_cond = qepJSON["Filter"]
+        filter_cond = cleanup_cond(filter_cond)
+
+        sqlfragments.append(filter_cond)
+
+        sqlfragments = subquery_block_add(sqlfragments, filter_cond)
+
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
+        sqlfragments = subquery_block_add(sqlfragments, filter_cond)
+
+        # Account for all subqueries
+        for subquery_result in re.findall("\$\d+", filter_cond):
+            filter_words = filter_cond.split()
+            
+            for filter_word in filter_words:
+                if filter_word == subquery_result:
+                    if filter_words.index(filter_word) > 1:
+                        sqlfragments.append("WHERE " + filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
+                        sqlfragments.append(filter_words[filter_words.index(filter_word) - 2] + " " + filter_words[filter_words.index(filter_word) - 1] + " (")
+
     if "Relation Name" in qepJSON.keys():
         if "Recheck Cond" in qepJSON.keys():
             sqlfragments = resolve_relation(sqlfragments, qepJSON)
@@ -154,6 +241,17 @@ def process_nested_loop(qepJSON, query):
 
         sqlfragments.append(filter_cond)
 
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
         sqlfragments = subquery_block_add(sqlfragments, filter_cond)
     
     if "Relation Name" in qepJSON.keys():
@@ -161,6 +259,167 @@ def process_nested_loop(qepJSON, query):
             sqlfragments = resolve_relation(sqlfragments, qepJSON)
         relation_name = qepJSON["Relation Name"]
         sqlfragments.append("FROM " + relation_name)
+
+    if "Plans" in qepJSON.keys():
+        all_names_present = True
+
+        for plan in qepJSON["Plans"]:
+            if "Relation Name" not in plan.keys():
+                all_names_present = False
+        
+        if all_names_present:
+            attributes = list()
+            
+            for plan in qepJSON["Plans"]:
+                attributes.append(plan["Relation Name"])
+
+            sqlfragment = ', '.join(attributes)
+            sqlfragments.append(sqlfragment)
+
+        sqlfragments_temp = sqlfragments.copy()
+
+        for sqlfragment in sqlfragments_temp:
+            for plan in qepJSON["Plans"]:
+                if "Alias" in plan.keys():
+                    sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
+
+    # Find matching SQL
+    search_in_sql(sqlfragments, query)
+
+# Process merge join
+def process_merge_join(qepJSON, query):
+    print("Processing merge join")
+
+    # Search attributes
+    start_index = -1
+    end_index = -1
+
+    sqlfragments = list()
+
+    if "Merge Cond" in qepJSON.keys():
+        filter_cond = qepJSON["Merge Cond"]
+        filter_cond = cleanup_cond(filter_cond)
+
+        sqlfragments.append(filter_cond)
+
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
+        sqlfragments = subquery_block_add(sqlfragments, filter_cond)
+    
+    if "Relation Name" in qepJSON.keys():
+        if "Join Filter" in qepJSON.keys():
+            sqlfragments = resolve_relation(sqlfragments, qepJSON)
+        relation_name = qepJSON["Relation Name"]
+        sqlfragments.append("FROM " + relation_name)
+
+    if "Plans" in qepJSON.keys():
+        all_names_present = True
+
+        for plan in qepJSON["Plans"]:
+            if "Relation Name" not in plan.keys():
+                all_names_present = False
+        
+        if all_names_present:
+            attributes = list()
+            
+            for plan in qepJSON["Plans"]:
+                attributes.append(plan["Relation Name"])
+
+            sqlfragment = ', '.join(attributes)
+            sqlfragments.append(sqlfragment)
+
+        sqlfragments_temp = sqlfragments.copy()
+
+        for sqlfragment in sqlfragments_temp:
+            for plan in qepJSON["Plans"]:
+                if "Alias" in plan.keys():
+                    sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
+
+    # Find matching SQL
+    search_in_sql(sqlfragments, query)
+
+# Process aggregate node
+def process_aggregate(qepJSON, query):
+    print("Processing aggregate")
+
+    sqlfragments = list()
+
+    if "Group Key" in qepJSON.keys():
+        group_key = qepJSON["Group Key"]
+        cleaned_key_list = list()
+        
+        for key in group_key:
+            sqlfragments.append(cleanup_cond(key))
+    
+    # Find matching SQL
+    search_in_sql(sqlfragments, query)
+
+# Process hash join
+def process_hash_join(qepJSON, query):
+    print("Processing hash join")
+
+    # Search attributes
+    start_index = -1
+    end_index = -1
+
+    sqlfragments = list()
+
+    if "Hash Cond" in qepJSON.keys():
+        filter_cond = qepJSON["Hash Cond"]
+        filter_cond = cleanup_cond(filter_cond)
+
+        sqlfragments.append(filter_cond)
+
+        filter_words = filter_cond.split()
+
+        for filter_word in filter_words:
+            if '=' == filter_word:
+                if filter_words.index(filter_word) > 0:
+                    filter_words[filter_words.index(filter_word) - 1], filter_words[filter_words.index(filter_word) + 1] = filter_words[filter_words.index(filter_word) + 1], filter_words[filter_words.index(filter_word) - 1]
+
+        new_filter_cond = ' '.join(filter_words)
+
+        sqlfragments.append(new_filter_cond)
+
+        sqlfragments = subquery_block_add(sqlfragments, filter_cond)
+    
+    if "Relation Name" in qepJSON.keys():
+        if "Join Filter" in qepJSON.keys():
+            sqlfragments = resolve_relation(sqlfragments, qepJSON)
+        relation_name = qepJSON["Relation Name"]
+        sqlfragments.append("FROM " + relation_name)
+
+    if "Plans" in qepJSON.keys():
+        all_names_present = True
+
+        for plan in qepJSON["Plans"]:
+            if "Relation Name" not in plan.keys():
+                all_names_present = False
+        
+        if all_names_present:
+            attributes = list()
+            
+            for plan in qepJSON["Plans"]:
+                attributes.append(plan["Relation Name"])
+
+            sqlfragment = ', '.join(attributes)
+            sqlfragments.append(sqlfragment)
+
+        sqlfragments_temp = sqlfragments.copy()
+
+        for sqlfragment in sqlfragments_temp:
+            for plan in qepJSON["Plans"]:
+                if "Alias" in plan.keys():
+                    sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
 
     # Find matching SQL
     search_in_sql(sqlfragments, query)
@@ -178,7 +437,7 @@ def search_in_sql(sqlfragments, query):
 
     # search for matching SQL
     for sqlfragment in sqlfragments:
-        start_index = find_str(query, sqlfragment)
+        start_index = find_str(query.lower(), sqlfragment.lower())
 
         if start_index is not -1:
             end_index = start_index + len(sqlfragment)
@@ -191,7 +450,7 @@ def search_in_sql(sqlfragments, query):
 
 # Append relation name to front of attribute in JSON
 def resolve_relation(sqlfragments, qepJSON):
-    sqlfragments_temp = sqlfragments.copy()
+    sqlfragments_temp = reversed(sqlfragments.copy())
 
     for sqlfragment in sqlfragments_temp:
         sqlwords = sqlfragment.split()
@@ -206,15 +465,23 @@ def resolve_relation(sqlfragments, qepJSON):
 
                     n += 1
 
-                    if nth_index(sqlwords, operator, n) > 0:
+                    if nth_index(sqlwords, operator, n) > 0 and nth_index(sqlwords, operator, n) < len(sqlwords) - 1:
                         if '.' not in sqlwords[nth_index(sqlwords, operator, n) - 1]:
                             sqlwords[nth_index(sqlwords, operator, n) - 1] = qepJSON["Relation Name"] + "." + sqlwords[nth_index(sqlwords, operator, n) - 1]
+                        if '.' not in sqlwords[nth_index(sqlwords, operator, n) + 1] and sqlwords[nth_index(sqlwords, operator, n) + 1].isidentifier():
+                            sqlwords[nth_index(sqlwords, operator, n) + 1] = qepJSON["Relation Name"] + "." + sqlwords[nth_index(sqlwords, operator, n) + 1]
 
         sqlfragment_new = ' '.join(sqlwords)
 
         # print(sqlfragment_new)
 
         sqlfragments.insert(0, sqlfragment_new)
+
+    for sqlfragment in sqlfragments:
+        if "Alias" in qepJSON.keys():
+            sqlfragment = sqlfragment.replace(qepJSON["Alias"], qepJSON["Relation Name"])
+        
+
     
     return sqlfragments
 
