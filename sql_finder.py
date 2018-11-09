@@ -45,7 +45,13 @@ def process_limit(qepJSON, query):
     if "Plan Rows" in qepJSON.keys():
         sqlfragments.append("LIMIT " + str(qepJSON["Plan Rows"]))
 
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process subquery scan node
 def process_subquery_scan(qepJSON, query):
@@ -57,7 +63,7 @@ def process_subquery_scan(qepJSON, query):
         sqlfragments.append("AS " + qepJSON["Alias"])
         sqlfragments.append(qepJSON["Alias"])
 
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
 
 # Process sequential scan node
 def process_seq_scan(qepJSON, query):
@@ -96,7 +102,13 @@ def process_seq_scan(qepJSON, query):
         sqlfragments.append(relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 def process_ind_scan(qepJSON, query):
     print("Processing index scan")
@@ -168,7 +180,13 @@ def process_ind_scan(qepJSON, query):
         sqlfragments.append("FROM " + relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 def process_bitmap_heap_scan(qepJSON, query):
     print("Processing bitmap heap scan")
@@ -246,7 +264,13 @@ def process_bitmap_heap_scan(qepJSON, query):
         sqlfragments.append("FROM " + relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process gather merge
 def process_index_only_scan(qepJSON, query):
@@ -319,7 +343,13 @@ def process_index_only_scan(qepJSON, query):
         sqlfragments.append("FROM " + relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process hash node
 def process_hash(qepJSON, query):
@@ -396,7 +426,13 @@ def process_hash(qepJSON, query):
                 sqlfragments.append("FROM " + relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process gather node
 def process_gather(qepJSON, query):
@@ -471,7 +507,13 @@ def process_gather(qepJSON, query):
                 sqlfragments.append("FROM " + relation_name)
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process unique node
 def process_unique(qepJSON, query):
@@ -565,7 +607,13 @@ def process_unique(qepJSON, query):
             sqlfragments.pop()
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process sort node
 def process_sort(qepJSON, query):
@@ -586,7 +634,13 @@ def process_sort(qepJSON, query):
             sqlfragments.insert(0, re.sub(r'(.*)\_\d+(.*)', r'\1\2', sqlfragment))
             sqlfragments.pop()
     
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process nested loop
 def process_nested_loop(qepJSON, query):
@@ -647,7 +701,13 @@ def process_nested_loop(qepJSON, query):
                     sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process merge join
 def process_merge_join(qepJSON, query):
@@ -708,7 +768,13 @@ def process_merge_join(qepJSON, query):
                     sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process aggregate node
 def process_aggregate(qepJSON, query):
@@ -731,7 +797,13 @@ def process_aggregate(qepJSON, query):
             sqlfragments.append(cleanup_cond(key))
     
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process hash join
 def process_hash_join(qepJSON, query):
@@ -799,7 +871,13 @@ def process_hash_join(qepJSON, query):
             sqlfragments.pop()
 
     # Find matching SQL
-    search_in_sql(sqlfragments, query)
+    start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Search for corresponding SQL based on SQL fragments.
 # Function stops once a match is found
@@ -824,6 +902,8 @@ def search_in_sql(sqlfragments, query):
 
     if start_index is -1:
         print("Start index is " + str(start_index) + " and end index is " + str(end_index))
+
+    return start_index, end_index
 
 # Append relation name to front of attribute in JSON
 def resolve_relation(sqlfragments, qepJSON):

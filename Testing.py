@@ -32,7 +32,7 @@ def traverseJSON(qepJSON, query):
 
         if qepJSON['Node Type'] in options.keys():
             # Process node
-            options[qepJSON['Node Type']](qepJSON, query)
+            modifiedJSON = options[qepJSON['Node Type']](qepJSON, query)
 
         if 'Relation Name' in qepJSON.keys():
             if 'Filter' in qepJSON.keys():
@@ -54,7 +54,7 @@ def traverseJSON(qepJSON, query):
     print("--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
     if qepJSON['Node Type'] in options.keys():
         # Process node
-        options[qepJSON['Node Type']](qepJSON, query)
+        modifiedJSON = options[qepJSON['Node Type']](qepJSON, query)
     
     # Traverse through current node
     if 'Relation Name' in qepJSON.keys():
@@ -90,4 +90,19 @@ with open('SQLTestQuery.sql') as g:
 
 plan_data = data[0]['Plan']
 
+# modified JSON will be put here
+modifiedJSON = plan_data
+
+# modify modifiedJSON variable through recursive function
 traverseJSON(plan_data, query)
+
+# Enclose in one plan
+dictJSON = dict()
+dictJSON["Plan"] = modifiedJSON
+
+# Enclose in list
+finalJSON = list()
+finalJSON.append(dictJSON)
+
+with open('finalJSON.json', 'w') as outfile:
+    json.dump(finalJSON, outfile, indent=2)
