@@ -49,7 +49,7 @@ def cleanup_cond(filter):
                 
                 if encountered_par:
                     if (filtered_result[index] == ' '):
-                        if (filtered_result[index - 1] == ','):
+                        if (filtered_result[index - 1] == ',' or filtered_result[index - 1] == filtered_result[index - 1].upper()):
                             continue
                         encountered_par = False
 
@@ -73,10 +73,9 @@ def cleanup_cond(filter):
 
             filtered_result = new_filtered_result[:]
 
-            filtered_result = re.sub(r'\'(\d+)\'', r'\1', filtered_result)
-
     filtered_result = filtered_result.replace('~~', 'LIKE')
     filtered_result = filtered_result.replace('~', 'SIMILAR TO')
+    filtered_result = re.sub(r'\'(\d+)\'', r'\1', filtered_result)
 
     # Remove regular expressions
     if 'SIMILAR TO' in filtered_result:
@@ -832,7 +831,6 @@ def process_aggregate(qepJSON, query):
 
     if "Group Key" in qepJSON.keys():
         group_key = qepJSON["Group Key"]
-        cleaned_key_list = list()
         
         for key in group_key:
             sqlfragments.append("GROUP BY " + cleanup_cond(key))
@@ -935,6 +933,7 @@ def search_in_sql(sqlfragments, query):
             break
 
     if start_index is -1:
+        end_index = -1
         print("Start index is " + str(start_index) + " and end index is " + str(end_index))
 
     return start_index, end_index
@@ -981,8 +980,6 @@ def subquery_block_add(sqlfragments, filter_cond):
     filter_words = filter_cond.split()
 
     for operator in ['=', '!=', '<>']:
-
-        n = 0
 
         # Try to append to attributes
         for filter_word in filter_words:
