@@ -24,15 +24,66 @@ def find_str(s, char):
 
 # Cleanup or resolve the filter condition
 def cleanup_cond(filter):
+
+    # Replace all type declarations in filter
     filtered_result = filter.replace("::text", "").replace("::numeric", "").replace("::double precision", "").replace("::timestamp without time zone", "")
+
+    # Remove all parentheses
     while ('(' in filtered_result) or (')' in filtered_result):
         filtered_result = re.sub(r'\((.*?)\)', r'\1', filtered_result)
 
-    for aggr in ['avg', 'count', 'min', 'max', 'sum', 'div']:
+    # Restore parentheses in aggregate functions
+    for aggr in ['avg', 'count', 'min', 'max', 'sum', 'div', 'mul', 'date_part']:
         if aggr in filtered_result:
-            filtered_result = filtered_result.replace(aggr, '')
+            filtered_result = filtered_result.replace(aggr, aggr.upper() + '(')
+        
+            encountered_par = False
+
+            new_filtered_result = ""
+            par_no = 0
+
+            for index in range(len(filtered_result)):
+                
+                if (filtered_result[index] == '('):
+                    encountered_par = True
+                
+                if encountered_par:
+                    if (filtered_result[index] == ' '):
+                        if (filtered_result[index - 1] == ','):
+                            continue
+                        encountered_par = False
+
+                        if new_filtered_result is "":
+                            new_filtered_result = filtered_result[:index] + ')' + filtered_result[index:]
+                        else:
+                            new_filtered_result = new_filtered_result[:index + par_no] + ')' + new_filtered_result[index + par_no:]
+                        
+                        par_no += 1
+
+                    if index is len(filtered_result) - 1:
+
+                        encountered_par = False
+
+                        if new_filtered_result is "":
+                            new_filtered_result = filtered_result + ')'
+                        else:
+                            new_filtered_result = new_filtered_result + ')'
+                        
+                        par_no += 1
+
+            filtered_result = new_filtered_result[:]
+
+            filtered_result = re.sub(r'\'(\d+)\'', r'\1', filtered_result)
 
     filtered_result = filtered_result.replace('~~', 'LIKE')
+    filtered_result = filtered_result.replace('~', 'SIMILAR TO')
+
+    # Remove regular expressions
+    if 'SIMILAR TO' in filtered_result:
+        filtered_result = re.sub(r'\'.*\'', '', filtered_result)
+
+    # Convert alias table names to relation names
+    filtered_result = re.sub(r'(.*)\_\d+(.*)', r'\1\2', filtered_result)
 
     return filtered_result
 
@@ -63,15 +114,18 @@ def process_subquery_scan(qepJSON, query):
         sqlfragments.append("AS " + qepJSON["Alias"])
         sqlfragments.append(qepJSON["Alias"])
 
+    # Find matching SQL
     start_index, end_index = search_in_sql(sqlfragments, query)
+
+    if start_index is not -1:
+        qepJSON["start_index"] = start_index
+        qepJSON["end_index"] = end_index
+
+    return qepJSON
 
 # Process sequential scan node
 def process_seq_scan(qepJSON, query):
     print("Processing seq scan")
-   
-    # Search attributes
-    start_index = -1
-    end_index = -1
 
     sqlfragments = list()
 
@@ -190,10 +244,6 @@ def process_ind_scan(qepJSON, query):
 
 def process_bitmap_heap_scan(qepJSON, query):
     print("Processing bitmap heap scan")
-
-    # Search attributes
-    start_index = -1
-    end_index = -1
 
     sqlfragments = list()
 
@@ -599,12 +649,12 @@ def process_unique(qepJSON, query):
                 relation_name = plan["Relation Name"]
                 sqlfragments.append("FROM " + relation_name)
 
-    sqlfragments_temp = reversed(sqlfragments.copy())
+    '''sqlfragments_temp = reversed(sqlfragments.copy())
 
     if sqlfragments_temp is not None:
         for sqlfragment in sqlfragments_temp:
             sqlfragments.insert(0, re.sub(r'(.*)\_\d+(.*)', r'\1\2', sqlfragment))
-            sqlfragments.pop()
+            sqlfragments.pop()'''
 
     # Find matching SQL
     start_index, end_index = search_in_sql(sqlfragments, query)
@@ -627,12 +677,12 @@ def process_sort(qepJSON, query):
             sqlfragments.append("ORDER BY " + cleanup_cond(sort_key))
             sqlfragments.append(cleanup_cond(sort_key))
 
-    sqlfragments_temp = reversed(sqlfragments.copy())
+    '''sqlfragments_temp = reversed(sqlfragments.copy())
 
     if sqlfragments_temp is not None:
         for sqlfragment in sqlfragments_temp:
             sqlfragments.insert(0, re.sub(r'(.*)\_\d+(.*)', r'\1\2', sqlfragment))
-            sqlfragments.pop()
+            sqlfragments.pop()'''
     
     start_index, end_index = search_in_sql(sqlfragments, query)
 
@@ -645,10 +695,6 @@ def process_sort(qepJSON, query):
 # Process nested loop
 def process_nested_loop(qepJSON, query):
     print("Processing nested loop")
-
-    # Search attributes
-    start_index = -1
-    end_index = -1
 
     sqlfragments = list()
 
@@ -712,10 +758,6 @@ def process_nested_loop(qepJSON, query):
 # Process merge join
 def process_merge_join(qepJSON, query):
     print("Processing merge join")
-
-    # Search attributes
-    start_index = -1
-    end_index = -1
 
     sqlfragments = list()
 
@@ -809,10 +851,6 @@ def process_aggregate(qepJSON, query):
 def process_hash_join(qepJSON, query):
     print("Processing hash join")
 
-    # Search attributes
-    start_index = -1
-    end_index = -1
-
     sqlfragments = list()
 
     if "Hash Cond" in qepJSON.keys():
@@ -863,12 +901,12 @@ def process_hash_join(qepJSON, query):
                 if "Alias" in plan.keys():
                     sqlfragments.append(sqlfragment.replace(plan["Alias"], plan["Relation Name"]))
 
-    sqlfragments_temp = reversed(sqlfragments.copy())
+    '''sqlfragments_temp = reversed(sqlfragments.copy())
 
     if sqlfragments_temp is not None:
         for sqlfragment in sqlfragments_temp:
             sqlfragments.insert(0, re.sub(r'(.*)\_\d+(.*)', r'\1\2', sqlfragment))
-            sqlfragments.pop()
+            sqlfragments.pop()'''
 
     # Find matching SQL
     start_index, end_index = search_in_sql(sqlfragments, query)
@@ -882,10 +920,6 @@ def process_hash_join(qepJSON, query):
 # Search for corresponding SQL based on SQL fragments.
 # Function stops once a match is found
 def search_in_sql(sqlfragments, query):
-
-    # Search attributes
-    start_index = -1
-    end_index = -1
 
     print("\nSQL Fragments: " + str(sqlfragments) + "\n")
     # print("\n" + query + "\n")
@@ -937,8 +971,6 @@ def resolve_relation(sqlfragments, qepJSON):
     for sqlfragment in sqlfragments:
         if "Alias" in qepJSON.keys():
             sqlfragment = sqlfragment.replace(qepJSON["Alias"], qepJSON["Relation Name"])
-        
-
     
     return sqlfragments
 
@@ -964,23 +996,3 @@ def subquery_block_add(sqlfragments, filter_cond):
                         sqlfragments.insert(1, filter_words[filter_words.index(filter_word) - 1] + " NOT IN (")
 
     return sqlfragments
-
-# Currently unused
-def traverse_parse_tree(parse_tree):
-    # Parse tree
-    queue = [parse_tree[0]]
-    visited = list()
-    visited.append(parse_tree[0].value.replace('\n', ' ').replace('\t', ''))
-    # print(visited)
-    # print()
-    while queue:
-        node = queue.pop(0)
-        if hasattr(node, 'tokens'):
-            for child in node.tokens:
-                if child not in visited:
-                    queue.append(child)
-                    visited.append(child.value.replace('\n', ' ').replace('\t', ''))
-                    # print(visited)
-                    # print()
-    
-    return visited
