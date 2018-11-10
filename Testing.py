@@ -73,11 +73,11 @@ def traverseJSON(qepJSON, query):
 
     return modifiedJSON
 
-def main():
-    with open('testjson.json') as f:
+def connect_query(json_dir, sql_dir, output_json_dir):
+    with open(json_dir) as f:
         data = json.load(f)
 
-    with open('SQLTestQuery.sql') as g:
+    with open(sql_dir) as g:
         query = g.read()
         g.close()
 
@@ -97,8 +97,19 @@ def main():
     finalJSON = list()
     finalJSON.append(dictJSON)
 
-    with open('finalJSON.json', 'w') as outfile:
+    # write to output JSON file
+    with open(output_json_dir, 'w') as outfile:
         json.dump(finalJSON, outfile, indent=2)
+
+def main():
+    # Set input and output directory of postGreSQL JSON file
+    json_dir = 'testjson.json'
+    output_json_dir = 'finalJSON.json'
+
+    # Set directory of SQL file
+    sql_dir = 'SQLTestQuery.sql'
+
+    connect_query(json_dir, sql_dir, output_json_dir)
 
 if __name__ == '__main__':
     main()
