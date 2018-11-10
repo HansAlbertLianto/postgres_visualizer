@@ -6,6 +6,9 @@ from pprint import pprint
 
 def traverseJSON(qepJSON, query):
 
+    # assign JSON to be modified to a new JSON variable
+    modifiedJSON = qepJSON
+
     # Declare node types
     options = {
         "Seq Scan": sql_finder.process_seq_scan,
@@ -34,6 +37,7 @@ def traverseJSON(qepJSON, query):
             # Process node
             modifiedJSON = options[qepJSON['Node Type']](qepJSON, query)
 
+        # For debugging purposes
         if 'Relation Name' in qepJSON.keys():
             if 'Filter' in qepJSON.keys():
                 print("Performed " + qepJSON['Node Type'] + " on " 
@@ -48,7 +52,7 @@ def traverseJSON(qepJSON, query):
 
     # Recursive part
     for subplan_data in qepJSON['Plans']:
-        traverseJSON(subplan_data, query)
+        modifiedJSON = traverseJSON(subplan_data, query)
 
     # Process current node
     print("--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
@@ -67,42 +71,34 @@ def traverseJSON(qepJSON, query):
     else:
         print("Performed " + qepJSON['Node Type'] + ".")
 
+    return modifiedJSON
 
-def convert(sql_string):
-    if (type(sql_string) is not str):
-        return
-    
-    parse_tree = sqlparse.parse(sql_string)
+def main():
+    with open('testjson.json') as f:
+        data = json.load(f)
 
-    return parse_tree
+    with open('SQLTestQuery.sql') as g:
+        query = g.read()
+        g.close()
 
-with open('testjson.json') as f:
-    data = json.load(f)
+        # Clean query
+        query = re.sub(' +', ' ', query.replace("\n", " ").replace("\t", ""))
 
-with open('SQLTestQuery.sql') as g:
-    query = g.read()
-    g.close()
+    plan_data = data[0]['Plan']
 
-    # Clean query
-    query = re.sub(' +', ' ', query.replace("\n", " ").replace("\t", ""))
+    # modified JSON will be put here
+    resultJSON = traverseJSON(plan_data, query)
 
-    parsed_query = convert(query)
+    # Enclose in one plan
+    dictJSON = dict()
+    dictJSON["Plan"] = resultJSON
 
-plan_data = data[0]['Plan']
+    # Enclose in list
+    finalJSON = list()
+    finalJSON.append(dictJSON)
 
-# modified JSON will be put here
-modifiedJSON = plan_data
+    with open('finalJSON.json', 'w') as outfile:
+        json.dump(finalJSON, outfile, indent=2)
 
-# modify modifiedJSON variable through recursive function
-traverseJSON(plan_data, query)
-
-# Enclose in one plan
-dictJSON = dict()
-dictJSON["Plan"] = modifiedJSON
-
-# Enclose in list
-finalJSON = list()
-finalJSON.append(dictJSON)
-
-with open('finalJSON.json', 'w') as outfile:
-    json.dump(finalJSON, outfile, indent=2)
+if __name__ == '__main__':
+    main()
