@@ -88,14 +88,9 @@ def connect_query(json_dir, sql_dir, output_json_dir):
 
     # modified JSON will be put here
     resultJSON = traverseJSON(plan_data, query)
-
-    # Enclose in one plan
-    dictJSON = dict()
-    dictJSON["Plan"] = resultJSON
-
-    # Enclose in list
-    finalJSON = list()
-    finalJSON.append(dictJSON)
+    
+    # Encapsulate again in a dictionary and in a list
+    finalJSON = [{"Plan": resultJSON}]
 
     # write to output JSON file
     with open(output_json_dir, 'w') as outfile:
