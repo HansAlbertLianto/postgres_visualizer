@@ -922,6 +922,9 @@ def search_in_sql(sqlfragments, query):
     print("\nSQL Fragments: " + str(sqlfragments) + "\n")
     # print("\n" + query + "\n")
 
+    # initialize start_index to not found
+    start_index = -1
+
     # search for matching SQL
     for sqlfragment in sqlfragments:
         start_index = find_str(query.lower(), sqlfragment.lower())
